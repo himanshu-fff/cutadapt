@@ -18,6 +18,15 @@ def run_paired(params, in1, in2, expected1, expected2):
 			assert files_equal(cutpath(expected2), p2)
 
 
+def run_interleaved(params, inpath, expected):
+	if type(params) is str:
+		params = params.split()
+	with temporary_path("temp-interleaved.fastq") as tmp:
+		params += ['--interleaved', '-o', tmp, datapath(inpath)]
+		assert cutadapt.main(params) is None
+		assert files_equal(cutpath(expected), tmp)
+
+
 def test_paired_separate():
 	'''test separate trimming of paired-end reads'''
 	run('-a TTAGACATAT', 'paired-separate.1.fastq', 'paired.1.fastq')
@@ -159,4 +168,11 @@ def test_paired_end_A_only():
 	run_paired('-A CAGTGGAGTA',
 		in1='paired.1.fastq', in2='paired.2.fastq',
 		expected1='paired-onlyA.1.fastq', expected2='paired-onlyA.2.fastq'
+	)
+
+
+def test_interleaved():
+	'''single-pass interleaved paired-end with -q and -m'''
+	run_interleaved('-q 20 -a TTAGACATAT -A CAGTGGAGTA -m 14 -M 90',
+		inpath='interleaved.fastq', expected='interleaved.fastq'
 	)
