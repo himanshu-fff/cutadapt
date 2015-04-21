@@ -47,30 +47,28 @@ class RedirectingFilter(Filter):
 	Abstract base class for a filter that can send the reads it discards to a
 	separate output file.
 	"""
-	def __init__(self, outfile=None, paired_outfile=None, check_second=True):
+	def __init__(self, writer, check_second=True):
 		super(RedirectingFilter, self).__init__(check_second)
-		self.outfile = outfile
-		self.paired_outfile = paired_outfile
+		self.writer = writer
 		self.written = 0  # no of written reads or read pairs
 		self.written_bp = [0, 0]
 
 	def __call__(self, read1, read2=None):
 		if super(RedirectingFilter, self).__call__(read1, read2) == DISCARD:
-			if self.outfile is not None:
-				read1.write(self.outfile)
+			if self.writer is not None:
+				writer.write(read1, read2)
 				self.written += 1
 				self.written_bp[0] += len(read1)
-			if read2 is not None and self.paired_outfile is not None:
-				read2.write(self.paired_outfile)
-				self.written_bp[1] += len(read2)
+				if read2 is not None: # TODO move to writer class
+					self.written_bp[1] += len(read2)
 			return DISCARD
 		return KEEP
 
 
 class TooShortReadFilter(RedirectingFilter):
-	def __init__(self, minimum_length, too_short_outfile, check_second=True):
+	def __init__(self, minimum_length, writer, check_second=True):
 		# TODO paired_outfile is left at its default value None (read2 is silently discarded)
-		super(TooShortReadFilter, self).__init__(outfile=too_short_outfile, check_second=check_second)
+		super(TooShortReadFilter, self).__init__(writer=writer, check_second=check_second)
 		self.minimum_length = minimum_length
 
 	def discard(self, read):
@@ -78,8 +76,8 @@ class TooShortReadFilter(RedirectingFilter):
 
 
 class TooLongReadFilter(RedirectingFilter):
-	def __init__(self, maximum_length, too_long_outfile, check_second=True):
-		super(TooLongReadFilter, self).__init__(outfile=too_long_outfile, check_second=check_second)
+	def __init__(self, maximum_length, writer, check_second=True):
+		super(TooLongReadFilter, self).__init__(writer=writer, check_second=check_second)
 		self.maximum_length = maximum_length
 
 	def discard(self, read):
@@ -117,12 +115,6 @@ class DiscardUntrimmedFilter(RedirectingFilter):
 	"""
 	A Filter that discards untrimmed reads.
 	"""
-	def __init__(self, untrimmed_outfile, untrimmed_paired_outfile, check_second=True):
-		super(DiscardUntrimmedFilter, self).__init__(
-			outfile=untrimmed_outfile,
-			paired_outfile=untrimmed_paired_outfile,
-			check_second=check_second)
-
 	def discard(self, read):
 		return read.match is None
 
@@ -131,12 +123,6 @@ class DiscardTrimmedFilter(RedirectingFilter):
 	"""
 	A filter that discards trimmed reads.
 	"""
-	def __init__(self, trimmed_outfile, trimmed_paired_outfile, check_second=True):
-		super(DiscardTrimmedFilter, self).__init__(
-			outfile=trimmed_outfile,
-			paired_outfile=trimmed_paired_outfile,
-			check_second=check_second)
-
 	def discard(self, read):
 		return read.match is not None
 

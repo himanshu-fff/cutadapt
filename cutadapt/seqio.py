@@ -422,9 +422,6 @@ class PairedSequenceReader(object):
 	def __exit__(self, *args):
 		self.close()
 
-	def __del__(self):
-		self.close()
-
 
 class InterleavedSequenceReader(object):
 	"""
@@ -456,8 +453,10 @@ class InterleavedSequenceReader(object):
 	def __exit__(self, *args):
 		self.close()
 
-	def __del__(self):
-		self.close()
+
+class PairedSequenceWriter(object):
+	def __init__(self,
+
 
 
 class UnknownFileType(Exception):
